@@ -118,22 +118,18 @@ class Default_Model_Action_Class
 	{	
 		global $mysqli;
 
-		$retData= array( 
-			'command'=>$action, 
-			'number'=>'', 
-			'data'=>$mArr, 
-			'status'=>'N', 
-			'error'=>''
-			) ;
-		$sqlQuery = "INSERT INTO `queue_commands` (`cq_command`, `cq_cq_index`, `cq_mq_index`, `cq_step`, `cq_data`, `cq_time`, `cq_update`, `cq_status`) VALUES ('".$action."','".$cqIndex."','".$mqIndex."','".$step."','".serialize($mArr)."','".date("Y-m-d H:i:s", $timestamp)."', '', 'N')"; 
-		$mysqli->query($sqlQuery);
+		$retData= array( 	'command'=>$action, 'number'=>'', 'data'=>$mArr, 'status'=>'NACK', 'error'=>'' ) ;
+
+		$mysqli->query("	INSERT 
+								INTO `queue_commands` (`cq_command`, `cq_cq_index`, `cq_mq_index`, `cq_step`, `cq_data`, `cq_time`, `cq_update`, `cq_status`) 
+								VALUES ('".$action."','".$cqIndex."','".$mqIndex."','".$step."','".serialize($mArr)."','".date("Y-m-d H:i:s", $timestamp)."', '', 'N')");
 		$error = $mysqli->error;
 		if ($error=='') { 
 			$retData['status']='ACK';
 			$retData['number']=1;
 			$retData['error']=''; 
 		} else { 
-			$retData['status']='N';
+			$retData['status']='NACK';
 			$retData['number']=0;
 			$retData['error']=$error;
 		}
@@ -146,9 +142,9 @@ class Default_Model_Action_Class
 
 			$retData = $this->$function($mArr,1,$cqIndex);
 			if ($retData['result']=='Y') {
-				$sqlQuery = "UPDATE `queue_commands` SET `cq_update` = '".date("Y-m-d H:i:s", time())."' ,`cq_status`= 'Y', cq_result='".serialize($mArr)."' where cq_index='".$cqIndex."' ";
-	//	echo $sqlQuery;
-				$result = $mysqli->query($sqlQuery);
+				$result = $mysqli->query(" UPDATE `queue_commands` 
+													SET `cq_update` = '".date("Y-m-d H:i:s", time())."' ,`cq_status`= 'Y', cq_result='".serialize($mArr)."' 
+													WHERE cq_index='".$cqIndex."' ");
 			}
 	}
 
@@ -220,25 +216,58 @@ class Default_Model_Action_Class
 
 	public function doMediaDeleteFile($mArr,$mNum,$cqIndex)
 	{
-		$retData= array('cqIndex'=>$cqIndex, 'source_path'=> $mArr['source_path'], 'destination_path'=> $mArr['destination_path'], 'number'=> 0, 'result'=> 'N') ;
-			if( substr( $file, -1 ) == '/' )
-				delTree( $file );
-			else
-				unlink( $file );
+		global $paths;
 
+		$retData= array('cqIndex'=>$cqIndex, 'source_path'=> $mArr['source_path'], 'destination_path'=> $mArr['destination_path'], 'number'=> 0, 'result'=> 'N') ;
+			if(!is_dir( $paths['destination'].$mArr['source_path'].$mArr['filename'])) {
+				if (unlink( $paths['destination'].$mArr['source_path'].$mArr['filename'])) $retData['result']='Y';
+			}
 		return $retData;
 	}
 
 	public function doMediaDeleteFolder($mArr,$mNum,$cqIndex)
 	{
-		$retData= array('cqIndex'=>$cqIndex, 'folder'=> '', 'path'=> '','number'=> $mNum, 'result'=> 'N') ;
+		global $paths;
 
+		$retData= array('cqIndex'=>$cqIndex, 'source_path'=> $mArr['source_path'], 'path'=>$paths['destination'], 'number'=> $mNum, 'result'=> 'N') ;
+// a:2:{s:11:"source_path";s:16:"1504_sdfdfsdsdf/";s:19:"collection_deletion";i:1;}		
+		if ( is_dir( rtrim($paths['destination'].$mArr['source_path'], '\/' ))) {
+			$this->deleteAll($paths['destination'].$mArr['source_path'],true);
+			if (rmdir($paths['destination'].$mArr['source_path'])) $retData['result']='Y';	
+		}else{
+			 $retData['result']='Y';
+		}
 		return $retData;
 	}
 
-	public function doMediaUpdateMetadata($mArr,$mNum,$cqIndex)
+	public function doUpdateMetadata($mArr,$mNum,$cqIndex)
 	{
-		$retData= array('cqIndex'=>$cqIndex, 'source_path'=> $mArr['source_path'], 'destination_path'=> $mArr['destination_path'], 'number'=> 0, 'result'=> 'N') ;
+		global $paths;
+
+		$retData= array('cqIndex'=>$cqIndex, 'source_path'=> $mArr['source_path'], 'destination_path'=> $mArr['destination_path'], 'number'=> 0, 'result'=> 'Y') ;
+
+		if (file_exists($paths['destination'].$mArr['destination_path'].$mArr['filename']) AND strtolower($fileformat)=="mp3") {
+		  # update title ID3 tag in file
+		  $TaggingFormat = 'UTF-8';
+		  $getID3 = new getID3;
+		  getid3_lib::IncludeDependency(GETID3_INCLUDEPATH.'write.php', __FILE__);
+		  $tagwriter = new getid3_writetags;
+		  $tagwriter->filename = $paths['destination'].$mArr['destination_path'].$mArr['filename'];
+		  $tagwriter->tagformats = array('id3v2.3', 'ape');
+		  $TagData['title'][] = $mArr['metaData']['title'];
+		  $TagData['genre'][] = $mArr['metaData']['genere'];
+		  $TagData['artist'][] = $mArr['metaData']['author'];
+		  $TagData['album'][] = $mArr['metaData']['course_code']." ".$mArr['metaData']['podcast_title'];
+		  $TagData['year'][] = date('Y');
+		  $TagData['ape']['comments'] = "Item from ".$mArr['metaData']['podcast_title'];
+		  $tagwriter->tag_data = $TagData;
+		  if ($tagwriter->WriteTags()) {
+			# $message.=" and ID3 tags written to $filename</I>";
+		  } else {
+			$message.=" <I>but was unable to write ID3 tags to $filename</I>";
+		  }
+		  unset($getID3);
+		}
 
 		return $retData;
 	}
@@ -279,7 +308,6 @@ class Default_Model_Action_Class
 		$retData= array('cqIndex'=>$cqIndex, 'source_path'=> $mArr['source_path'], 'destination_path'=> $mArr['destination_path'], $retData['folderFiles']=>0 , $retData['fileDate']=>0 ,'number'=> 0, 'result'=> 'N') ;
 		if ( is_file( $destination['media'].$mArr['workflow'].$mArr['filename']) ) {
 			$retData['result']='Y';
-			$foo = getFilesFromDir($dir);
 			$retData['folderFiles'] = $this->getFilesFromDir($destination['media'].$mArr['destination_path']);
 			$retData['folderDate'] = filemtime($destination['media'].$mArr['destination_path']);
 		}
@@ -300,15 +328,15 @@ class Default_Model_Action_Class
 		
 		$retData = array( 'command'=>'poll-media', 'status'=>'ACK', 'number'=>0, 'timestamp'=>time());
 
-		$sqlQuery0 = "SELECT * FROM queue_commands AS cq WHERE  cq.cq_status = 'Y' ORDER BY cq.cq_time";
-//	echo $sqlQuery0;
-		$result0 = $mysqli->query($sqlQuery0);
+		$result0 = $mysqli->query("	SELECT * 
+												FROM queue_commands AS cq 
+												WHERE  cq.cq_status = 'Y' 
+												ORDER BY cq.cq_time");
 		if ($result0->num_rows) {
 			$i=0;
 			while(	$row0 = $result0->fetch_object()) { 
 				$cqIndexData[] = array(	'status'=>$row0->cq_status, 'data'=>unserialize($row0->cq_result), 'cqIndex'=>$row0->cq_cq_index, 'mqIndex'=>$row0->cq_mq_index, 'step'=>$row0->cq_step  );
-				$sqlQuery = "UPDATE `queue_commands` SET `cq_status`= 'R' where cq_index='".$row0->cq_index."' ";
-				$result = $mysqli->query($sqlQuery);
+				$mysqli->query("UPDATE `queue_commands` SET `cq_status`= 'R' where cq_index='".$row0->cq_index."' ");
 				$i++;
 			}
 			if (isset($cqIndexData)) {
