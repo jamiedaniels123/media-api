@@ -21,10 +21,9 @@ require_once("./lib/classes/action-media.class.php");
 		$data=json_decode($dataMess[1],true);
 	
 // Check we know this command/action
-		$sqlQuery = "	SELECT * 
+		$result = $mysqli->query("	SELECT * 
 							FROM command_routes AS cr 
-							WHERE cr.cr_action = '".$data['command']."'";
-		$result = $mysqli->query($sqlQuery);
+							WHERE cr.cr_action = '".$data['command']."'");
 		$row = $result->fetch_object();
 		
 		if ($result->num_rows) {

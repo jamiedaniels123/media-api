@@ -21,6 +21,7 @@
 	
 // Process the outstanding commands for each message
 		while(	$row0 = $result0->fetch_object()) { 
+//			$query.= print_r($row0);
 			$m_data= $dataObj->doQueueAction($row0->cr_function, unserialize($row0->cq_data), $row0->cq_index);	
 		}
 	}

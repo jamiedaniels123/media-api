@@ -31,7 +31,7 @@ class Default_Model_Action_Class
 		$files = glob( $dir . '*', GLOB_MARK );
 		foreach( $files as $file ){
 			if( substr( $file, -1 ) == '/' )
-				delTree( $file );
+				$this->delTree( $file );
 			else
 				unlink( $file );
 		}
@@ -57,7 +57,7 @@ class Default_Model_Action_Class
 					$path = $directory . "/" . $contents;
 				   
 					if(is_dir($path)) {
-						deleteAll($path);
+						$this->deleteAll($path);
 					} else {
 						unlink($path);
 					}
@@ -138,8 +138,8 @@ class Default_Model_Action_Class
 
 	public function doQueueAction($function, $mArr, $cqIndex)
 	{
-		global $mysqli,$outObj,$mediaUrl;
-
+		global $mysqli,$outObj,$mediaUrl,$debug;
+			$debug.=$function." - ";
 			$retData = $this->$function($mArr,1,$cqIndex);
 			if ($retData['result']=='Y') {
 				$result = $mysqli->query(" UPDATE `queue_commands` 
@@ -232,8 +232,8 @@ class Default_Model_Action_Class
 		$retData= array('cqIndex'=>$cqIndex, 'source_path'=> $mArr['source_path'], 'path'=>$paths['destination'], 'number'=> $mNum, 'result'=> 'N') ;
 // a:2:{s:11:"source_path";s:16:"1504_sdfdfsdsdf/";s:19:"collection_deletion";i:1;}		
 		if ( is_dir( rtrim($paths['destination'].$mArr['source_path'], '\/' ))) {
-			$this->deleteAll($paths['destination'].$mArr['source_path'],true);
-			if (rmdir($paths['destination'].$mArr['source_path'])) $retData['result']='Y';	
+			$this->delTree(rtrim($paths['destination'].$mArr['source_path'], '\/' ));
+			if ( !is_dir( rtrim($paths['destination'].$mArr['source_path'], '\/' ))) $retData['result']='Y';	
 		}else{
 			 $retData['result']='Y';
 		}
