@@ -11,19 +11,24 @@
 	$dataObj = new Default_Model_Action_Class($mysqli);	
 
 // Get the actions from the queue table
+	$timeStart= time();
 
-	$result0 = $mysqli->query("	SELECT * 
-											FROM queue_commands AS cq, command_routes AS cr 
-											WHERE cr.cr_action=cq.cq_command 
-											AND cq.cq_status = 'N' 
-											ORDER BY cq.cq_time");
-	if (isset($result0->num_rows)) {
-	
-// Process the outstanding commands for each message
-		while(	$row0 = $result0->fetch_object()) { 
-//			$query.= print_r($row0);
-			$m_data= $dataObj->doQueueAction($row0->cr_function, unserialize($row0->cq_data), $row0->cq_index);	
+	while ( time() < $timeStart + 8 ) {
+		$result0 = $mysqli->query("	SELECT * 
+												FROM queue_commands AS cq, command_routes AS cr 
+												WHERE cr.cr_action=cq.cq_command 
+												AND cq.cq_status = 'N' 
+												ORDER BY cq.cq_time");
+		if (isset($result0->num_rows)) {
+		
+	// Process the outstanding commands for each message
+			while(	$row0 = $result0->fetch_object()) { 
+	//			$query.= print_r($row0);
+				$m_data= $dataObj->doQueueAction($row0->cr_function, unserialize($row0->cq_data), $row0->cq_index, $row0->cq_cq_index);	
+			}
 		}
+		ob_clean();
+		sleep(3);
 	}
 
 // Clean up old completed commands

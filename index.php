@@ -9,6 +9,7 @@
 require_once("./lib/config.php");
 require_once("./lib/classes/action-media.class.php");
 
+
 // Initialise objects
 	$mysqli = new mysqli($dbLogin['dbhost'], $dbLogin['dbusername'], $dbLogin['dbuserpass'], $dbLogin['dbname']);
 	$dataObj = new Default_Model_Action_Class($mysqli);	
@@ -43,12 +44,14 @@ require_once("./lib/classes/action-media.class.php");
 
 // Log the command and response
 	if (!isset($m_data['status']) || $m_data['status']!='ACK') {
-		$sqlLogging = "	INSERT INTO `api_log` (`al_message`, `al_reply`, `al_timestamp`) 
-								VALUES ( '".urldecode($dataStream)."', '".serialize($m_data)."', '".date("Y-m-d H:i:s", time())."' )";
+		$sqlLogging = "	INSERT INTO `api_log` (`al_message`, `al_reply`, `al_debug`, `al_timestamp`) 
+								VALUES ( '".urldecode($dataStream)."', '".serialize($m_data)."', '".ob_get_contents()."', '".date("Y-m-d H:i:s", time())."' )";
 		$result = $mysqli->query($sqlLogging);
 	}
 
-// Output the result to the caller
-	echo json_encode($m_data);
+// Get rid of any debug and output the result to the caller
+	ob_clean();
+	file_put_contents("php://output", json_encode($m_data));
+	ob_end_clean();
 
 ?>
