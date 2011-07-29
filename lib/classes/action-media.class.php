@@ -145,7 +145,6 @@ class Default_Model_Action_Class
 //		}
 
 
-		$src_path = $paths['destination'].$mArr['source_path'];
 		$dest_path = $paths['destination'].$mArr['destination_path'];
 		$dest_file_path = $dest_path.$mArr['filename'];
 		$src_file_path = $paths['source'].$cqIndex."_".urlencode($mArr['destination_path'].$mArr['filename']);
@@ -308,7 +307,7 @@ class Default_Model_Action_Class
 		return $retData;
 	}
 
-	public function doUpdateMetadata($mArr,$mNum,$cqIndex)
+	public function doMediaUpdateMetadata($mArr,$mNum,$cqIndex)
 	{
 		global $paths;
 
@@ -434,7 +433,8 @@ class Default_Model_Action_Class
 			$i=0;
 			while(	$row0 = $result0->fetch_object()) { 
 				$cqIndexData[] = array( 'status'=>$row0->cq_status, 'data'=>unserialize($row0->cq_result), 'cqIndex'=>$row0->cq_cq_index, 'mqIndex'=>$row0->cq_mq_index, 'step'=>$row0->cq_step  );
-				$mysqli->query("UPDATE `queue_commands` SET `cq_status`= 'R' where cq_index='".$row0->cq_index."' ");
+				$mysqli->query("	UPDATE `queue_commands` 
+										SET `cq_status`= 'R' where cq_index='".$row0->cq_index."' ");
 				$i++;
 			}
 			if (isset($cqIndexData)) {

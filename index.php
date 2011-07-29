@@ -52,6 +52,6 @@ require_once("./lib/classes/action-media.class.php");
 // Get rid of any debug and output the result to the caller
 	ob_clean();
 	file_put_contents("php://output", json_encode($m_data));
-	ob_end_clean();
+//	ob_end_clean();
 
 ?>
