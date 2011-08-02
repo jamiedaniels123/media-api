@@ -8,9 +8,12 @@
 
 class Default_Model_Action_Class
  {
+    protected $m_mysqli;
 	
 	/**  * Constructor  */
-    function Default_Model_Action_Class($mysqli){}  
+    function Default_Model_Action_Class($mysqli){
+		$this->m_mysqli = $mysqli;
+	}  
 
 //---------The basic methods for file management ----------------------------------------------------------------------
 
@@ -91,14 +94,13 @@ class Default_Model_Action_Class
 
 	public function queueAction($mArr,$action,$cqIndex,$mqIndex,$step,$timestamp)
 	{	
-		global $mysqli;
 
 		$retData= array( 	'command'=>$action, 'number'=>'', 'data'=>$mArr, 'status'=>'NACK', 'error'=>'' ) ;
 
-		$mysqli->query("	INSERT 
+		$this->m_mysqli->query("	INSERT 
 								INTO `queue_commands` (`cq_command`, `cq_cq_index`, `cq_mq_index`, `cq_step`, `cq_data`, `cq_time`, `cq_update`, `cq_status`) 
 								VALUES ('".$action."','".$cqIndex."','".$mqIndex."','".$step."','".serialize($mArr)."','".date("Y-m-d H:i:s", $timestamp)."', '', 'N')");
-		$error = $mysqli->error;
+		$error = $this->m_mysqli->error;
 		if ($error=='') { 
 			$retData['status']='ACK';
 			$retData['number']=1;
@@ -113,11 +115,10 @@ class Default_Model_Action_Class
 
 	public function doQueueAction($function, $mArr, $cqIndex, $cqCqIndex)
 	{
-		global $mysqli,$outObj,$mediaUrl,$debug;
 			
 			$retData = $this->$function($mArr,1,$cqCqIndex);
 			if ($retData['result']=='Y' || $retData['result']=='F') {
-				$result = $mysqli->query(" UPDATE `queue_commands` 
+				$result = $this->m_mysqli->query(" UPDATE `queue_commands` 
 													SET `cq_update` = '".date("Y-m-d H:i:s", time())."' ,`cq_status`= '".$retData['result']."', cq_result='".serialize($retData)."' 
 													WHERE cq_index='".$cqIndex."' ");
 			}
@@ -125,7 +126,7 @@ class Default_Model_Action_Class
 
 	public function doDirectAction($function, $mArr)
 	{
-		global $mysqli,$outObj,$mediaUrl;
+
 			$retData = $this->$function($mArr,1);
 		return $retData;
 	}
@@ -134,6 +135,7 @@ class Default_Model_Action_Class
 
 	public function doMediaMoveFile($mArr,$mNum,$cqIndex)
 	{
+
 		global $paths, $debug;
 
 		$retData= array('cqIndex'=>$cqIndex, 'number'=> 0, 'source_path'=>$mArr['source_path'], 'destination_path'=>$mArr['destination_path'], 'filename'=>$mArr['filename'], 'result'=> 'N') ;
@@ -421,11 +423,10 @@ class Default_Model_Action_Class
 
 	public function doPollMedia($mArr,$mNum)
 	{
-		global $mysqli;
 		
 		$retData = array( 'command'=>'poll-media', 'status'=>'ACK', 'number'=>0, 'timestamp'=>time());
 
-		$result0 = $mysqli->query("	SELECT * 
+		$result0 = $this->m_mysqli->query("	SELECT * 
 												FROM queue_commands AS cq 
 												WHERE  cq.cq_status IN ('Y','F') 
 												ORDER BY cq.cq_time");
@@ -433,7 +434,7 @@ class Default_Model_Action_Class
 			$i=0;
 			while(	$row0 = $result0->fetch_object()) { 
 				$cqIndexData[] = array( 'status'=>$row0->cq_status, 'data'=>unserialize($row0->cq_result), 'cqIndex'=>$row0->cq_cq_index, 'mqIndex'=>$row0->cq_mq_index, 'step'=>$row0->cq_step  );
-				$mysqli->query("	UPDATE `queue_commands` 
+				$this->m_mysqli->query("	UPDATE `queue_commands` 
 										SET `cq_status`= 'R' where cq_index='".$row0->cq_index."' ");
 				$i++;
 			}
