@@ -14,11 +14,12 @@
 	$timeStart= time();
 
 	while ( time() < $timeStart + 8 ) {
-		$result0 = $mysqli->query("	SELECT * 
-												FROM queue_commands AS cq, command_routes AS cr 
-												WHERE cr.cr_action=cq.cq_command 
-												AND cq.cq_status = 'N' 
-												ORDER BY cq.cq_time");
+		ob_start();
+		$result0 = $mysqli->query("
+			SELECT * 
+			FROM queue_commands AS cq, command_routes AS cr 
+			WHERE cr.cr_action=cq.cq_command AND cq.cq_status = 'N' 
+			ORDER BY cq.cq_time");
 		if (isset($result0->num_rows)) {
 		
 	// Process the outstanding commands for each message
@@ -35,10 +36,11 @@
 
 // Clean up old completed commands and log
 
-	$mysqli->query("	DELETE FROM `queue_commands` 
-							WHERE DATE(cq_time) < date_sub(curdate(), interval 12 hour)  
-							AND `cq_status`='R' ");
-	$mysqli->query("	DELETE FROM `api_log` 
-							WHERE al_timestamp < (now() - interval 24 hour) ");
+	$mysqli->query("
+		DELETE FROM `queue_commands` 
+		WHERE DATE(cq_time) < date_sub(curdate(), interval 12 hour) AND `cq_status`='R' ");
+	$mysqli->query("
+		DELETE FROM `api_log` 
+		WHERE al_timestamp < (now() - interval 24 hour) ");
 
 ?>
