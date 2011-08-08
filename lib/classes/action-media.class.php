@@ -88,8 +88,7 @@ class Default_Model_Action_Class
 	}
 
 	public function doQueueAction($function, $mArr, $cqIndex, $cqCqIndex)
-	{
-			
+	{			
 			$retData = $this->$function($mArr,1,$cqCqIndex);
 			if ($retData['result']=='Y' || $retData['result']=='F') {
 				$result = $this->m_mysqli->query("
@@ -409,7 +408,12 @@ class Default_Model_Action_Class
 		if ($result0->num_rows) {
 			$i=0;
 			while(	$row0 = $result0->fetch_object()) { 
-				$cqIndexData[] = array( 'status'=>$row0->cq_status, 'data'=>unserialize($row0->cq_result), 'cqIndex'=>$row0->cq_cq_index, 'mqIndex'=>$row0->cq_mq_index, 'step'=>$row0->cq_step  );
+//				$cqIndexData[] = array( 'status'=>$row0->cq_status, 'data'=>unserialize($row0->cq_result), 'cqIndex'=>$row0->cq_cq_index, 'mqIndex'=>$row0->cq_mq_index, 'step'=>$row0->cq_step  );
+				$cqIndexData[$i] = unserialize($row0->cq_result);
+				$cqIndexData[$i]['status']= $row0->cq_status;
+				$cqIndexData[$i]['cqIndex']= $row0->cq_cq_index;
+				$cqIndexData[$i]['mqIndex']= $row0->cq_mq_index;
+				$cqIndexData[$i]['step']= $row0->cq_step;
 				$this->m_mysqli->query("
 					UPDATE `queue_commands` 
 					SET `cq_status`= 'R' where cq_index='".$row0->cq_index."' ");
