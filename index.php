@@ -8,11 +8,17 @@
 
 require_once("./lib/config.php");
 require_once("./lib/classes/action-media.class.php");
+// include the ID3 tagging scripts
+$TaggingFormat = 'UTF-8';
 
+require_once('./lib/getid3/getid3.php');
+// Initialize getID3 engine
+$getID3 = new getID3;
+$getID3->setOption(array('encoding'=>$TaggingFormat));
 
 // Initialise objects
-	$mysqli = new mysqli($dbLogin['dbhost'], $dbLogin['dbusername'], $dbLogin['dbuserpass'], $dbLogin['dbname']);
-	$dataObj = new Default_Model_Action_Class($mysqli);	
+$mysqli = new mysqli($dbLogin['dbhost'], $dbLogin['dbusername'], $dbLogin['dbuserpass'], $dbLogin['dbname']);
+$dataObj = new Default_Model_Action_Class($mysqli, $getID3);	
 
 // Grab the posted input stream and decode
 	$dataStream = file_get_contents("php://input");
