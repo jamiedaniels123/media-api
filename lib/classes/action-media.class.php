@@ -310,13 +310,14 @@ class Default_Model_Action_Class
 		$dest_path = $paths['destination'].$mArr['destination_path'];
 		$dest_file_path = $dest_path.$mArr['destination_filename'];
 		$nameArr = pathinfo($mArr['destination_filename']);
- error_log("Filepath = ".$dest_file_path);  // debug
+// error_log("Filepath = ".$arrTemp);  // debug
 		
-		if (file_exists($dest_file_path) AND strtolower($nameArr['extension'])=="mp3") {
+		if (file_exists($dest_file_path) && isset($nameArr['extension']) && strtolower($nameArr['extension'])=="mp3") {
 		  # update title ID3 tag in file
 		  $TaggingFormat = 'UTF-8';
 		  $tagwriter = new getid3_writetags;
 		  $tagwriter->filename = $dest_file_path;
+//		  if (!chmod($dest_file_path, 0755)) $tagwriter->errors[] = "Could not set write permissions on file";
 		  $tagwriter->remove_other_tags = true;
 		  $tagwriter->tagformats = array('id3v2.3', 'ape');
 		  $TagData['title'][] = $mArr['meta_data']['title'];
@@ -332,7 +333,7 @@ class Default_Model_Action_Class
 		  } else {
 			$retData['result']='F';
 			$retData['number']=1;
- error_log("Error = ".json_encode($tagwriter->errors));  // debug
+			$retData['debug'] = rawurlencode(serialize($tagwriter->errors));
 		  }
 		}
 
@@ -375,7 +376,7 @@ class Default_Model_Action_Class
 		$t_dest_path = rtrim($dest_path,'\/');
 		
 		if (!is_dir($t_dest_path)) {
-			mkdir($folder_path, 0755, true);
+			mkdir($folder_path, 0665, true);
 			usleep ( 100000 );
 		}
 				
@@ -471,6 +472,7 @@ class Default_Model_Action_Class
 				$retData['data']=$cqIndexData; 
 				$retData['status']= 'Y';
 				$retData['number']= $i+1;
+// error_log("Error = ".json_encode($retData));  // debug
 			} else {
 				$retData['data']='Media api - Nothing to do!';
 			}

@@ -53,7 +53,7 @@ $dataObj = new Default_Model_Action_Class($mysqli, $getID3);
 	if (!isset($m_data['status']) || $m_data['status']!='ACK') {
 		$sqlLogging = "
 			INSERT INTO `api_log` (`al_message`, `al_reply`, `al_debug`, `al_timestamp`) 
-			VALUES ( '".urldecode($dataStream)."', '".serialize($m_data)."', '".ob_get_contents()."', '".date("Y-m-d H:i:s", time())."' )";
+			VALUES ( '".urldecode($dataStream)."', '".json_encode($m_data)."', '', '".date("Y-m-d H:i:s", time())."' )";
 		$result = $mysqli->query($sqlLogging);
 	}
 
