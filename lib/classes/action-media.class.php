@@ -15,6 +15,85 @@ class Default_Model_Action_Class
 		$this->m_mysqli = $mysqli;
 	}  
 
+    function PsExec($commandJob) {
+
+        $command = $commandJob.' > /dev/null 2>&1 & echo $!';
+        exec($command ,$op);
+        $pid = (int)$op[0];
+//		print_r ($op);
+        if($pid!="") return $pid;
+
+        return false;
+    }
+
+//---------The methods for background process management ----------------------------------------------------------------------
+
+    function PsExists($pid) {
+
+        exec("ps ax | grep $pid 2>&1", $output);
+
+        while( list(,$row) = each($output) ) {
+
+                $row_array = explode(" ", $row);
+                $check_pid = $row_array[0];
+
+                if($pid == $check_pid) {
+                        return true;
+                }
+        }
+
+        return false;
+    }
+
+    function PsKill($pid) {
+        exec("kill -9 $pid", $output);
+    }
+
+	public function startCheckProcess($apCommand, $cq_index) {
+
+	global $timeout;
+	
+// Check poll process and launch if not running. The Poll process polls both Media and Encoder APIs for completed tasks.
+		$result0 = $this->m_mysqli->query("
+			SELECT ap_process_id, ap_cq_index, ap_script, ap_status, DATEDIFF(minute, ap_timestamp, ap_last_checked) as ap_time
+			FROM api_process 
+			WHERE ap_status = 'Y' 
+			ORDER BY ap_timestamp DESC");
+		$j=0;
+		if ($result0->num_rows >=1) {
+			while(	$row0 = $result0->fetch_object()) {
+				if ($row0->ap_cq_index == $cq_index) $j=1;
+				if ($this->PsExists($row0->ap_process_id)) {
+					if ($row->ap_time < $timout) {
+						$this->m_mysqli->query("
+							UPDATE `api_process` 
+							SET `ap_status`='Y', `ap_last_checked`='".date("Y-m-d H:i:s", time())."' 
+							WHERE `ap_process_id`=  '".$row0->ap_process_id."' ");
+					} else {
+						$this->PsKill($row0->ap_process_id);
+						$this->m_mysqli->query("
+							UPDATE `api_process` 
+							SET `ap_status`='N', `ap_last_checked`='".date("Y-m-d H:i:s", time())."' 
+							WHERE `ap_process_id`=  '".$row0->ap_process_id."' ");
+					}
+				} else  {
+						$this->m_mysqli->query("
+							UPDATE `api_process` 
+							SET `ap_status`='N', `ap_last_checked`='".date("Y-m-d H:i:s", time())."' 
+							WHERE `ap_process_id`=  '".$row0->ap_process_id."' ");
+				}
+			}
+		}
+		if ($j==0) {
+				$processID=$this->PsExec($apCommand);
+				if ($processID==false) $status='N'; else $status='Y';  
+				$result = $this->m_mysqli->query("
+					INSERT INTO `api_process` (`ap_process_id`, `ap_cq_index`, `ap_script`, `ap_timestamp`, `ap_status`) 
+					VALUES ( '".$processID."',  '".$cq_index."',  '".$apCommand."', '".date("Y-m-d H:i:s", time())."', '".$status."' )");
+		}
+
+	}
+
 //---------The basic methods for file management ----------------------------------------------------------------------
 
 	function recurse_copy($src,$dst) {
@@ -342,10 +421,16 @@ class Default_Model_Action_Class
 
 	public function doYoutubeFileUpload($mArr,$mNum,$cqIndex)
 	{
+		global  $timeout,$paths;
+		
 		$retData=$mArr;
 		$retData['cqIndex'] = $cqIndex;
 		$retData['number'] = 1;
-		$retData['result'] = 'Y';
+		$retData['result'] = 'N';
+
+// Check and/or start 2s polling process
+		$apCommand="curl -d \"number=1&time=".$timeout."\" ".$paths['media-api']."youtube_upload.php";	
+		$this->startCheckProcess($apCommand,$cqIndex); 
 
 		return $retData;
 	}
