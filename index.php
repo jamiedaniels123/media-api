@@ -41,13 +41,13 @@ $dataObj = new Default_Model_Action_Class($mysqli, $getID3);
 			}else if ($row->cr_route_type=='direct'){
 				$m_data = $dataObj->doDirectAction($row->cr_function,$data['data']);
 			}
-		}else{
-			$m_data = array('status'=>'NACK', 'data'=>'Command not known!', 'timestamp'=>time());
-		}
 	}else{
-		$m_data = array('status'=>'NACK', 'data'=>'No request values set!', 'timestamp'=>time());
-	
+		$m_data = array('status'=>'NACK', 'data'=>'Command not known! - '.$apiName.'-'.$version, 'timestamp'=>time());
 	}
+
+}else{
+	$m_data = array('status'=>'NACK', 'data'=>'No request values set! - '.$apiName.'-'.$version, 'timestamp'=>time());
+}
 
 // Log the command and response
 	if (!isset($m_data['status']) || $m_data['status']!='ACK') {
