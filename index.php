@@ -51,10 +51,8 @@ $dataObj = new Default_Model_Action_Class($mysqli, $getID3);
 
 // Log the command and response
 	if (!isset($m_data['status']) || $m_data['status']!='ACK') {
-		$sqlLogging = "
-			INSERT INTO `api_log` (`al_message`, `al_reply`, `al_debug`, `al_timestamp`) 
-			VALUES ( '".urldecode($dataStream)."', '".json_encode($m_data)."', '', '".date("Y-m-d H:i:s", time())."' )";
-		$result = $mysqli->query($sqlLogging);
+		$result = $mysqli->query("	INSERT INTO `api_log` (`al_message`, `al_reply`, `al_debug`, `al_timestamp`) 
+											VALUES ( '".json_encode($data)."', '".json_encode($m_data)."', '', '".date("Y-m-d H:i:s", time())."' )");
 	}
 
 // Get rid of any debug and output the result to the caller
