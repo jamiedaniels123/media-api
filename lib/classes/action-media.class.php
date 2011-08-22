@@ -419,7 +419,7 @@ class Default_Model_Action_Class
 		return $retData;
 	}
 
-	public function doYoutubeFileUpload($mArr,$mNum,$cqIndex)
+	public function doMediaYoutubeUpload($mArr,$mNum,$cqIndex)
 	{
 		global  $timeout,$paths;
 		
@@ -435,7 +435,7 @@ class Default_Model_Action_Class
 		return $retData;
 	}
 
-	public function doYoutubeFileUpdate($mArr,$mNum,$cqIndex)
+	public function doMediaYoutubeUpdate($mArr,$mNum,$cqIndex)
 	{
 		$retData=$mArr;
 		$retData['cqIndex'] = $cqIndex;
