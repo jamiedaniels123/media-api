@@ -53,23 +53,25 @@ class Default_Model_Action_Class
 
 	global $timeout;
 	
-// Check poll process and launch if not running. The Poll process polls both Media and Encoder APIs for completed tasks.
+// Check poll process and launch if a process is not already running for this command ID ($cq_index). The Poll process polls both Media and Encoder APIs for completed tasks.
 		$result0 = $this->m_mysqli->query("
-			SELECT ap_process_id, ap_cq_index, ap_script, ap_status, DATEDIFF(minute, ap_timestamp, ap_last_checked) as ap_time
+			SELECT ap_process_id, ap_cq_index, ap_script, ap_status, ap_timestamp, ap_last_checked 
 			FROM api_process 
-			WHERE ap_status = 'Y' 
+			WHERE ap_status = 'Y' AND ap_cq_index='".$cq_index."' 
 			ORDER BY ap_timestamp DESC");
 		$j=0;
 		if ($result0->num_rows >=1) {
 			while(	$row0 = $result0->fetch_object()) {
 				if ($row0->ap_cq_index == $cq_index) $j=1;
+// Is this process (ap_process_id) still running and within the timeout ($timout) if so update it's ap_last_checked timestamp   				
 				if ($this->PsExists($row0->ap_process_id)) {
-					if ($row->ap_time < $timout) {
+					if ( $timout < (time() - $row->ap_timestamp)) {
 						$this->m_mysqli->query("
 							UPDATE `api_process` 
 							SET `ap_status`='Y', `ap_last_checked`='".date("Y-m-d H:i:s", time())."' 
 							WHERE `ap_process_id`=  '".$row0->ap_process_id."' ");
 					} else {
+// Kill it if it is beyond the timeout.
 						$this->PsKill($row0->ap_process_id);
 						$this->m_mysqli->query("
 							UPDATE `api_process` 
@@ -77,6 +79,7 @@ class Default_Model_Action_Class
 							WHERE `ap_process_id`=  '".$row0->ap_process_id."' ");
 					}
 				} else  {
+// Its not running so update the data row
 						$this->m_mysqli->query("
 							UPDATE `api_process` 
 							SET `ap_status`='N', `ap_last_checked`='".date("Y-m-d H:i:s", time())."' 
@@ -88,8 +91,8 @@ class Default_Model_Action_Class
 				$processID=$this->PsExec($apCommand);
 				if ($processID==false) $status='N'; else $status='Y';  
 				$result = $this->m_mysqli->query("
-					INSERT INTO `api_process` (`ap_process_id`, `ap_cq_index`, `ap_script`, `ap_timestamp`, `ap_status`) 
-					VALUES ( '".$processID."',  '".$cq_index."',  '".$apCommand."', '".date("Y-m-d H:i:s", time())."', '".$status."' )");
+					INSERT INTO `api_process` (`ap_process_id`, `ap_cq_index`, `ap_script`, `ap_datetime`,  `ap_timestamp`, `ap_status`) 
+					VALUES ( '".$processID."',  '".$cq_index."',  '".$apCommand."', '".date("Y-m-d H:i:s", time())."', '".time()."', '".$status."' )");
 		}
 
 	}
@@ -150,9 +153,12 @@ class Default_Model_Action_Class
 
 		$retData= array( 	'command'=>$action, 'number'=>'', 'data'=>$mArr, 'status'=>'NACK', 'error'=>'' ) ;
 
+		if(isset($mArr['meta_data'])) 
+			$mArr['meta_data'] = unserialize(gzuncompress(stripslashes(base64_decode(strtr($mArr['meta_data'], '-_,', '+/=')))));
+		
 		$this->m_mysqli->query("
 			INSERT INTO `queue_commands` (`cq_command`, `cq_cq_index`, `cq_mq_index`, `cq_step`, `cq_data`, `cq_time`, `cq_update`, `cq_status`) 
-			VALUES ('".$action."','".$cqIndex."','".$mqIndex."','".$step."','".json_encode($mArr)."','".date("Y-m-d H:i:s", $timestamp)."', '', 'N')");
+			VALUES ('".$action."','".$cqIndex."','".$mqIndex."','".$step."','".serialize($mArr)."','".date("Y-m-d H:i:s", $timestamp)."', '', 'N')");
 		$error = $this->m_mysqli->error;
 		if ($error=='') { 
 			$retData['status']='ACK';
@@ -173,7 +179,7 @@ class Default_Model_Action_Class
 			if ($retData['result']=='Y' || $retData['result']=='F') {
 				$result = $this->m_mysqli->query("
 					UPDATE `queue_commands` 
-					SET `cq_update` = '".date("Y-m-d H:i:s", time())."' ,`cq_status`= '".$retData['result']."', cq_result='".json_encode($retData)."' 
+					SET `cq_update` = '".date("Y-m-d H:i:s", time())."' ,`cq_status`= '".$retData['result']."', cq_result='".serialize($retData)."' 
 					WHERE cq_index='".$cqIndex."' ");
 			}
 	}
@@ -383,7 +389,8 @@ class Default_Model_Action_Class
 		$retData['cqIndex'] = $cqIndex;
 		$retData['number'] = 0;
 		$retData['result'] = 'N';
-		$arrTemp=json_encode($mArr);
+		$metaData = $mArr['meta_data'];
+//		$arrTemp=json_encode($mArr);
 // error_log("nameArr.path =".$arrTemp);  // debug
 
 		$dest_path = $paths['destination'].$mArr['destination_path'];
@@ -399,12 +406,12 @@ class Default_Model_Action_Class
 //		  if (!chmod($dest_file_path, 0755)) $tagwriter->errors[] = "Could not set write permissions on file";
 		  $tagwriter->remove_other_tags = true;
 		  $tagwriter->tagformats = array('id3v2.3', 'ape');
-		  $TagData['title'][] = $mArr['meta_data']['title'];
-		  $TagData['genre'][] = $mArr['meta_data']['genre'];
-		  $TagData['artist'][] = $mArr['meta_data']['author'];
-		  $TagData['album'][] = $mArr['meta_data']['course_code']." ".$mArr['meta_data']['podcast_title'];
+		  $TagData['title'][] = $metaData['title'];
+		  $TagData['genre'][] = $metaData['genre'];
+		  $TagData['artist'][] = $metaData['author'];
+		  $TagData['album'][] = $metaData['course_code']." ".$metaData['podcast_title'];
 		  $TagData['year'][] = date('Y');
-		  $TagData['ape']['comments'] = $mArr['meta_data']['comments'];
+		  $TagData['ape']['comments'] = $metaData['comments'];
 		  $tagwriter->tag_data = $TagData;
 		  if ($tagwriter->WriteTags()) {
 			$retData['result']='Y';
@@ -412,7 +419,7 @@ class Default_Model_Action_Class
 		  } else {
 			$retData['result']='F';
 			$retData['number']=1;
-			$retData['debug'] = rawurlencode(serialize($tagwriter->errors));
+			$retData['debug'] = $tagwriter->errors;
 		  }
 		}
 
@@ -429,8 +436,8 @@ class Default_Model_Action_Class
 		$retData['result'] = 'N';
 
 // Check and/or start 2s polling process
-		$apCommand="curl -d \"number=1&time=".$timeout."\" ".$paths['media-api']."youtube_upload.php";	
-		$this->startCheckProcess($apCommand,$cqIndex); 
+		$apCommand="curl -d \"number=1&time=600".$timeout."\" ".$paths['media-api']."youtube_upload.php";	
+//		$this->startCheckProcess($apCommand,$cqIndex); 
 
 		return $retData;
 	}
@@ -533,7 +540,7 @@ class Default_Model_Action_Class
 	public function doPollMedia($mArr,$mNum)
 	{
 		
-		$retData = array( 'command'=>'poll-media', 'status'=>'ACK', 'number'=>0, 'timestamp'=>time());
+		$retData = array( 'command'=>'poll-media', 'status'=>'OK', 'number'=>0, 'timestamp'=>time());
 
 		$result0 = $this->m_mysqli->query("
 			SELECT * 
@@ -543,7 +550,9 @@ class Default_Model_Action_Class
 		if ($result0->num_rows) {
 			$i=0;
 			while(	$row0 = $result0->fetch_object()) { 
-				$cqIndexData[$i] = json_decode($row0->cq_result, true);
+				$cqIndexData[$i] = unserialize($row0->cq_result);
+				if(isset($cqIndexData[$i]['meta_data'])) $cqIndexData[$i]['meta_data'] = strtr(base64_encode(addslashes(gzcompress(serialize($cqIndexData[$i]['meta_data']),9))), '+/=', '-_,');
+				if(isset($cqIndexData[$i]['debug'])) $cqIndexData[$i]['debug'] = strtr(base64_encode(addslashes(gzcompress(serialize($cqIndexData[$i]['debug']),9))), '+/=', '-_,');
 				$cqIndexData[$i]['status']= $row0->cq_status;
 				$cqIndexData[$i]['cqIndex']= $row0->cq_cq_index;
 				$cqIndexData[$i]['mqIndex']= $row0->cq_mq_index;

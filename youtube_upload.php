@@ -19,9 +19,10 @@ require_once("lib/classes/upload.class.php");
 // Initialise objects
 
 	$clientLibraryPath = $paths['server-path']."lib/Zend/Gdata";
+
 	$oldPath = set_include_path(get_include_path() . PATH_SEPARATOR . $clientLibraryPath);
-	
-require_once './lib/Zend/Loader.php'; # this loads all of the API classes
+echo $oldPath;
+ require_once './lib/Zend/Loader.php'; # this loads all of the API classes
 
 	$mysqli = new mysqli($dbLogin['dbhost'], $dbLogin['dbusername'], $dbLogin['dbuserpass'], $dbLogin['dbname']);
 
