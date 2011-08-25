@@ -18,14 +18,34 @@ class Default_Model_YouTube_Class
 	}  
 
 // ------ User stuff
+
+	# function to check length of tags for YouTube, which doesn't allow tags longer than 30 characters
+	# the tags should be a comma-delimited list
+	function YouTubeTags($tags) {
+		$tagsA=explode(',',$tags);
+		$okTags=array();
+		foreach($tagsA as $tag) {
+			if (strlen($tag) < 31) $okTags[]=$tag;
+		}
+		$tags=implode(',',$okTags);
+
+		return $tags;
+	}
+
 	
 	public function uploadToYoutube($mArr, $cqIndex){
 
+	global $paths, $mimeTypes;
+
+// print_r($mArr);	
 		$retData=$mArr;
 		$retData['cqIndex'] = $cqIndex;
 		$retData['number'] = 0;
 		$retData['result'] = 'N';
 		$debug = "";
+		$tid=$mArr['podcast_item_id'];
+	  	$pid=$mArr['podcast_item_id'];
+
 		
 		$shortcode=$mArr['meta_data']['shortcode'];
 		$custom_id=$mArr['meta_data']['custom_id'];
@@ -38,13 +58,13 @@ class Default_Model_YouTube_Class
 		# appendToLog($youtube_tags); # DEBUG
 		# $youtube_tags=stripslashes($mArr['meta_data']['youtube_tags']);
 		# only include tags shorter than 31 characters
-		$youtube_tags=YouTubeTags(stripslashes($mArr['meta_data']['youtube_tags']));
+		$youtube_tags=$this->YouTubeTags(stripslashes($mArr['meta_data']['youtube_tags']));
 		
 		$transDate=$mArr['meta_data']['transDate']; # transcoding date
-		$filename=$mArr['meta_data']['filename'];
-		$fullpath=$podcastsPath.$custom_id."/".$mediaFolder['youtube'].$filename;
+		$filename=$mArr['destination_filename'];
+		$fullpath= $paths['destination'].$mArr['destination_path'].$filename;
 		$extn=substr(strtolower(strrchr($filename,".")),1);
-		$ContentType=$mimesTypes[$extn];
+		$ContentType=$mimeTypes[$extn];
 		
 		// create a new Zend_Gdata_App_MediaFileSource object
 		$filesource = $this->m_yt->newMediaFileSource($fullpath);
@@ -56,7 +76,7 @@ class Default_Model_YouTube_Class
 		// add the filesource to the video entry
 		$this->m_myVideoEntry->setMediaSource($filesource);
 		
-		$this->m_myVideoEntry->setVideoTitle($temp_title." ".$youtube_title); # add the temp shortcode to the front of each track title to make life easier for the post-uploading person
+		$this->m_myVideoEntry->setVideoTitle($mArr['podcast_item_id']." ".$youtube_title); # add the temp shortcode to the front of each track title to make life easier for the post-uploading person
 		$this->m_myVideoEntry->setVideoDescription($youtube_description);
 		
 		// The category must be a valid YouTube category!
@@ -113,14 +133,11 @@ class Default_Model_YouTube_Class
 			$retData['number']=1;
 			$retData['youtube_id'] = $youTubeID;
 			$retData['debug'] = $debug;
-			
-			$result = $this->m_mysqli->query("
-				UPDATE `queue_commands` 
-				SET `cq_update` = '".date("Y-m-d H:i:s", time())."' ,`cq_status`= '".$retData['result']."', cq_result='".json_encode($retData)."' 
-				WHERE cq_index='".$cqIndex."' ");
-		
+					
 		  }
-		  # NB: have to make sure we move onto the next record if there is a failure - otherwise it will just keep trying over and over again
+		  
+		  return $retData;
+		  
 	}
 
 }
