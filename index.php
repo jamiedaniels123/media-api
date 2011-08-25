@@ -50,7 +50,7 @@ $dataObj = new Default_Model_Action_Class($mysqli, $getID3);
 }
 
 // Log the command and response
-	if (!isset($m_data['status']) || $m_data['status']!='ACK') {
+	if (!isset($m_data['status']) || $m_data['status']!='OK') {
 		$result = $mysqli->query("	INSERT INTO `api_log` (`al_message`, `al_reply`, `al_debug`, `al_timestamp`) 
 											VALUES ( '".json_encode($data)."', '".json_encode($m_data)."', '', '".date("Y-m-d H:i:s", time())."' )");
 	}
