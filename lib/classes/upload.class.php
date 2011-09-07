@@ -88,7 +88,8 @@ class Default_Model_YouTube_Class
 		
 		// set some developer tags -- this is optional
 		// (see Searching by Developer Tags for more details)
-		$this->m_myVideoEntry->setVideoDeveloperTags(array('fromPodcast', $shortcode));
+		if( !empty( $shortcode ) )
+			$this->m_myVideoEntry->setVideoDeveloperTags(array('fromPodcast', $shortcode, '    '));
 		
 		// set the video's location -- this is also optional
 		$this->m_yt->registerPackage('Zend_Gdata_Geo');
@@ -110,17 +111,22 @@ class Default_Model_YouTube_Class
 		$uploadUrl = 'http://uploads.gdata.youtube.com/feeds/api/users/default/uploads';
 		
 		$youTubeID="";
+
 		// try to upload the video, catching a Zend_Gdata_App_HttpException, 
 		// if available, or just a regular Zend_Gdata_App_Exception otherwise
 		try {
 			$newEntry = $this->m_yt->insertEntry($this->m_myVideoEntry, $uploadUrl, 'Zend_Gdata_YouTube_VideoEntry');
 			$youTubeID=$newEntry->getVideoId();
 		} catch (Zend_Gdata_App_HttpException $httpException) {
+			echo "<pre>";
+			print_r( $httpException->getRawResponseBody() );
+			die('fffff');
 			$debug[] ="ERROR 1: ".$httpException->getRawResponseBody();
 		} catch (Zend_Gdata_App_Exception $e) {
 			$debug[] ="ERROR 2: ".$e->getMessage();
 		}
 		if (empty($youTubeID)) {
+
 			$debug[] = "ERROR: upload failed pid=".$pid." | tid=".$tid." | ".$fullpath." ";
 			$error=3;
 			$retData['result']='F';

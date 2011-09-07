@@ -953,6 +953,7 @@ class Zend_Gdata_YouTube_VideoEntry extends Zend_Gdata_YouTube_MediaEntry
      */
     public function setVideoCategory($category)
     {
+
         $this->ensureMediaGroupIsNotNull();
         $this->getMediaGroup()->setCategory(array(new Zend_Gdata_Media_Extension_MediaCategory($category, self::YOUTUBE_CATEGORY_SCHEMA)));
         return $this;
