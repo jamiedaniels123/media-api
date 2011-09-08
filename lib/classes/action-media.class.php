@@ -310,7 +310,7 @@ class Default_Model_Action_Class
 				$retData['error']="Delete fail of ".$dest_file_path." !";
 			}
 		} else {
-				$retData['result']='Y';
+				$retData['result']='F';
 				$retData['number']=0;			
 				$retData['error']="No file ".$dest_file_path." !";
 		}
@@ -436,18 +436,24 @@ class Default_Model_Action_Class
 		$retData['result'] = 'N';
 
 // Check and/or start 2s polling process
-		$apCommand="curl -d \"number=1&time=600".$timeout."\" ".$paths['media-api']."lib/youtube_upload.php";	
-//		$this->startCheckProcess($apCommand,$cqIndex); 
+		$apCommand="curl -d \"number=1&time=600".$timeout."\" ".$paths['media-api']."lib/youtube_upload.php?f=upload";	
+		$this->startCheckProcess($apCommand,$cqIndex); 
 
 		return $retData;
 	}
 
 	public function doMediaYoutubeUpdate($mArr,$mNum,$cqIndex)
 	{
+		global  $timeout,$paths;
+		
 		$retData=$mArr;
 		$retData['cqIndex'] = $cqIndex;
 		$retData['number'] = 1;
-		$retData['result'] = 'Y';
+		$retData['result'] = 'N';
+
+// Check and/or start 2s polling process
+		$apCommand="curl -d \"number=1&time=600".$timeout."\" ".$paths['media-api']."lib/youtube_upload.php?f=update";	
+//		$this->startCheckProcess($apCommand,$cqIndex); 
 
 		return $retData;
 	}
