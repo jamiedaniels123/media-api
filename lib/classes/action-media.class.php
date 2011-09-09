@@ -436,7 +436,7 @@ class Default_Model_Action_Class
 		$retData['result'] = 'N';
 
 // Check and/or start 2s polling process
-		$apCommand="curl -d \"number=1&time=600".$timeout."\" ".$paths['media-api']."lib/youtube_upload.php?f=upload";	
+		$apCommand="curl -d \"number=1&time=600".$timeout."\" ".$paths['media-api']."lib/youtube_upload.php";	
 		$this->startCheckProcess($apCommand,$cqIndex); 
 
 		return $retData;
@@ -452,7 +452,7 @@ class Default_Model_Action_Class
 		$retData['result'] = 'N';
 
 // Check and/or start 2s polling process
-		$apCommand="curl -d \"number=1&time=600".$timeout."\" ".$paths['media-api']."lib/youtube_upload.php?f=update";	
+		$apCommand="curl -d \"number=1&time=600".$timeout."\" ".$paths['media-api']."lib/youtube_upload.php";	
 //		$this->startCheckProcess($apCommand,$cqIndex); 
 
 		return $retData;

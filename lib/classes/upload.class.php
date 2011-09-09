@@ -45,22 +45,13 @@ class Default_Model_YouTube_Class
 		$debug = "";
 		$tid=$mArr['podcast_item_id'];
 	  	$pid=$mArr['podcast_item_id'];
-
 		
-		$shortcode=$mArr['meta_data']['shortcode'];
-		$custom_id=$mArr['meta_data']['custom_id'];
-		$course_code=stripslashes($mArr['meta_data']['course_code']);
-		$youtube_channel=$mArr['meta_data']['youtube_channel']; # which channel to send to - stored at the podcast level
-		$youtube_title=stripslashes($mArr['meta_data']['youtube_title']); # custom title for YouTube
-		$youtube_description=stripslashes($mArr['meta_data']['youtube_description']); # custom desciption for YouTube
-		# $youtube_tags=stripslashes($mArr['meta_data']['youtube_tags']).", \"collectionID_".$custom_id."\""; # comma-delimited keywords for YouTube
-		# $youtube_tags="123456789 012345678901234567890 , test, another-test"; # DEBUG
-		# appendToLog($youtube_tags); # DEBUG
-		# $youtube_tags=stripslashes($mArr['meta_data']['youtube_tags']);
+		$youtube_title=stripslashes($mArr['meta_data']['title']); # custom title for YouTube
+		$youtube_description=stripslashes($mArr['meta_data']['description']); # custom desciption for YouTube
+
 		# only include tags shorter than 31 characters
 		$youtube_tags=$this->YouTubeTags(stripslashes($mArr['meta_data']['youtube_tags']));
 		
-		$transDate=$mArr['meta_data']['transDate']; # transcoding date
 		$filename=$mArr['destination_filename'];
 		$fullpath= $paths['destination'].$mArr['destination_path'].$filename;
 		$extn=substr(strtolower(strrchr($filename,".")),1);
@@ -88,8 +79,8 @@ class Default_Model_YouTube_Class
 		
 		// set some developer tags -- this is optional
 		// (see Searching by Developer Tags for more details)
-		if( !empty( $shortcode ) )
-			$this->m_myVideoEntry->setVideoDeveloperTags(array('fromPodcast', $shortcode, '    '));
+		if( !empty( $mArr['meta_data']['shortcode'] ) )
+			$this->m_myVideoEntry->setVideoDeveloperTags(array('fromPodcast', $mArr['meta_data']['shortcode'], '    '));
 		
 		// set the video's location -- this is also optional
 		$this->m_yt->registerPackage('Zend_Gdata_Geo');
@@ -143,6 +134,68 @@ class Default_Model_YouTube_Class
 		  }
 		  
 		  return $retData;
+		  
+	}
+
+	public function updateYoutubeData($mArr, $cqIndex){
+
+	global $paths, $mimeTypes;
+
+// print_r($mArr);	
+		$retData=$mArr;
+		$retData['cqIndex'] = $cqIndex;
+		$retData['number'] = 0;
+		$retData['result'] = 'N';
+		$debug = "";
+		$tid=$mArr['podcast_item_id'];
+	  	$pid=$mArr['podcast_item_id'];
+
+		$youtube_id=$mArr['youtube_id'];
+		$youtube_title=stripslashes($mArr['meta_data']['title']); # custom title for YouTube
+		$youtube_description=stripslashes($mArr['meta_data']['description']); # custom desciption for YouTube
+
+		# only include tags shorter than 31 characters
+		$youtube_tags=$this->YouTubeTags(stripslashes($mArr['meta_data']['youtube_tags']));
+		
+		$extn=substr(strtolower(strrchr($filename,".")),1);
+		$ContentType=$mimeTypes[$extn];
+		
+		$this->m_myVideoEntry = $this->m_yt->getVideoEntry($youtube_id, null, true);
+		if ($this->m_myVideoEntry->getEditLink() !== null) {
+			try {
+			
+				$this->m_myVideoEntry->setVideoTitle($mArr['podcast_item_id']." ".$youtube_title); # add the temp shortcode to the front of each track title to make life easier for the post-uploading person
+				$this->m_myVideoEntry->setVideoDescription($youtube_description);
+				
+				// The category must be a valid YouTube category!
+				$this->m_myVideoEntry->setVideoCategory('Education');
+				
+				// Set keywords. Please note that this must be a comma-separated string
+				// and that individual keywords cannot contain whitespace
+				if ( !empty($youtube_tags) )
+					$this->m_myVideoEntry->SetVideoTags($youtube_tags);
+				
+				// set some developer tags -- this is optional
+				// (see Searching by Developer Tags for more details)
+				if( !empty( $mArr['meta_data']['shortcode'] ) )
+					$this->m_myVideoEntry->setVideoDeveloperTags(array('fromPodcast', $mArr['meta_data']['shortcode'], '    '));
+
+				$yt->updateEntry($this->m_myVideoEntry);
+
+			} catch (Exception $e) {
+				$error=3;
+				$retData['result']='P';
+				$retData['number']=1;
+				$retData['debug'] = "Error: ".$e->getMessage();
+			} 
+			if ($retData['result'] = 'N') {
+				$retData['result']='Y';
+				$retData['number']=1;
+				$retData['debug'] = $debug;			
+			}
+		}
+
+	return $retData;
 		  
 	}
 
