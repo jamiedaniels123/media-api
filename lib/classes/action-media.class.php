@@ -340,9 +340,9 @@ class Default_Model_Action_Class
 				$retData['error']="Delete fail of ".$dest_path." !";
 			}
 		}else{
-			$retData['result']='Y';
+			$retData['result']='F';
 			$retData['number']=0;
-			$retData['error']="No folder ".$dest_path." !";
+			$retData['error']="No folder ".$t_dest_path." !";
 		}
 		return $retData;
 	}
