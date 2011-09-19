@@ -418,18 +418,18 @@ class Default_Model_Action_Class
 		  $elements = explode( '/', $metaData['destination_path'] );
 		  $custom_id = $elements[0];
 		  
-		  if( file_exists( $dest_path.$metaData['destination_path'].$custom_id.'.jpg' ) ) {
+		  if( file_exists( $dest_path.$metaData['destination_path'].$custom_id.'_thm.jpg' ) ) {
 			  
-			  if( $fd = fopen( $dest_path.$metaData['destination_path'].$custom_id.'.jpg', 'rb' ) ) {
+			  if( $fd = fopen( $dest_path.$metaData['destination_path'].$custom_id.'_thm.jpg', 'rb' ) ) {
 				  
-				$APICdata = fread( $fd, filesize( $dest_path.$metaData['destination_path'].$custom_id.'.jpg' ) );
+				$APICdata = fread( $fd, filesize( $dest_path.$metaData['destination_path'].$custom_id.'_thm.jpg' ) );
 				fclose( $fd );
 				
-				list( $APIC_width, $APIC_height, $APIC_imageTypeID ) = GetImageSize( $dest_path.$metaData['destination_path'].$custom_id.'.jpg' );
+				list( $APIC_width, $APIC_height, $APIC_imageTypeID ) = GetImageSize( $dest_path.$metaData['destination_path'].$custom_id.'_thm.jpg' );
 				
 				$TagData['attached_picture'][0]['data'] = $APICdata;
 				$TagData['attached_picture'][0]['picturetypeid'] = 'Cover (front)';
-				$TagData['attached_picture'][0]['description'] = $custom_id.'.jpg';
+				$TagData['attached_picture'][0]['description'] = $custom_id.'_thm.jpg';
 				$TagData['attached_picture'][0]['mime'] = $APIC_imageTypeID;
 								  
 			  }
