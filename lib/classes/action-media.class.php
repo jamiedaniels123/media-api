@@ -412,6 +412,30 @@ class Default_Model_Action_Class
 		  $TagData['album'][] = $metaData['course_code']." ".$metaData['podcast_title'];
 		  $TagData['year'][] = date('Y');
 		  $TagData['ape']['comments'] = $metaData['comments'];
+		  
+		  // Modification to inject thumbnail image into MP3 file
+		  // Charles Jackson 19th Sept 2011
+		  $elements = explode( '/', $metaData['destination_path'] );
+		  $custom_id = $elements[0];
+		  
+		  if( file_exists( $dest_path.$metaData['destination_path'].$custom_id.'.jpg' ) ) {
+			  
+			  if( $fd = fopen( $dest_path.$metaData['destination_path'].$custom_id.'.jpg', 'rb' ) ) {
+				  
+				$APICdata = fread( $fd, filesize( $dest_path.$metaData['destination_path'].$custom_id.'.jpg' ) );
+				fclose( $fd );
+				
+				list( $APIC_width, $APIC_height, $APIC_imageTypeID ) = GetImageSize( $dest_path.$metaData['destination_path'].$custom_id.'.jpg' );
+				
+				$TagData['attached_picture'][0]['data'] = $APICdata;
+				$TagData['attached_picture'][0]['picturetypeid'] = 'Cover (front)';
+				$TagData['attached_picture'][0]['description'] = $custom_id.'.jpg';
+				$TagData['attached_picture'][0]['mime'] = $APIC_imageTypeID;
+								  
+			  }
+		  }
+		  // End of thumbnail modification.
+		  
 		  $tagwriter->tag_data = $TagData;
 		  if ($tagwriter->WriteTags()) {
 			$retData['result']='Y';
