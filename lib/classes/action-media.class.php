@@ -329,7 +329,7 @@ class Default_Model_Action_Class
 		$dest_path = $paths['destination'].$mArr['destination_path'];
 		$t_dest_path = rtrim($dest_path,'\/');
 
-		if ( is_dir( $t_dest_path && rtrim($mArr['destination_path'],'\/')!='')) {
+		if ( is_dir( $t_dest_path ) && rtrim($mArr['destination_path'],'\/')!='') {
 			$this->delTree($t_dest_path);
 			if ( !is_dir($t_dest_path)) {
 				$retData['result']='Y';	
@@ -340,9 +340,9 @@ class Default_Model_Action_Class
 				$retData['error']="Delete fail of ".$dest_path." !";
 			}
 		}else{
-			$retData['result']='Y';
+			$retData['result']='F';
 			$retData['number']=0;
-			$retData['error']="No folder ".$dest_path." !";
+			$retData['error']="No folder ".$t_dest_path." ! and destination path is ".rtrim($mArr['destination_path'],'\/');
 		}
 		return $retData;
 	}
@@ -397,8 +397,9 @@ class Default_Model_Action_Class
 		$dest_file_path = $dest_path.$mArr['destination_filename'];
 		$nameArr = pathinfo($mArr['destination_filename']);
 // error_log("Filepath = ".$arrTemp);  // debug
-		
-		if (file_exists($dest_file_path) && isset($nameArr['extension']) && strtolower($nameArr['extension'])=="mp3") {
+
+		if ( file_exists($dest_file_path) && isset($nameArr['extension']) && strtolower($nameArr['extension'])=="mp3") {
+			
 		  # update title ID3 tag in file
 		  $TaggingFormat = 'UTF-8';
 		  $tagwriter = new getid3_writetags;
@@ -412,6 +413,30 @@ class Default_Model_Action_Class
 		  $TagData['album'][] = $metaData['course_code']." ".$metaData['podcast_title'];
 		  $TagData['year'][] = date('Y');
 		  $TagData['ape']['comments'] = $metaData['comments'];
+
+		  // Modification to inject thumbnail image into MP3 file
+		  // Charles Jackson 19th Sept 2011
+		  $elements = explode( '/', $metaData['destination_path'] );
+		  $custom_id = $elements[0];
+		  
+		  if( file_exists( $dest_path.$custom_id.'/'.$custom_id.'_thm.jpg' ) ) {
+			  
+			  if( $fd = fopen( $dest_path.$custom_id.'/'.$custom_id.'_thm.jpg', 'rb' ) ) {
+				  
+				$APICdata = fread( $fd, filesize( $dest_path.$custom_id.'/'.$custom_id.'_thm.jpg' ) );
+				fclose( $fd );
+				
+				list( $APIC_width, $APIC_height, $APIC_imageTypeID ) = GetImageSize( $dest_path.$custom_id.'/'.$custom_id.'_thm.jpg' );
+				
+				$TagData['attached_picture'][0]['data'] = $APICdata;
+				$TagData['attached_picture'][0]['picturetypeid'] = 'Cover (front)';
+				$TagData['attached_picture'][0]['description'] = $custom_id.'_thm.jpg';
+				$TagData['attached_picture'][0]['mime'] = 'image/'.$APIC_imageTypeID;
+								  
+			  }
+		  }
+		  // End of thumbnail modification.
+		  
 		  $tagwriter->tag_data = $TagData;
 		  if ($tagwriter->WriteTags()) {
 			$retData['result']='Y';
@@ -436,7 +461,7 @@ class Default_Model_Action_Class
 		$retData['result'] = 'N';
 
 // Check and/or start 2s polling process
-		$apCommand="curl -d \"number=1&time=600".$timeout."\" ".$paths['media-api']."lib/youtube_upload.php?f=upload";	
+		$apCommand="curl -d \"number=1&time=600".$timeout."\" ".$paths['media-api']."lib/youtube_upload.php";	
 		$this->startCheckProcess($apCommand,$cqIndex); 
 
 		return $retData;
@@ -452,7 +477,7 @@ class Default_Model_Action_Class
 		$retData['result'] = 'N';
 
 // Check and/or start 2s polling process
-		$apCommand="curl -d \"number=1&time=600".$timeout."\" ".$paths['media-api']."lib/youtube_upload.php?f=update";	
+		$apCommand="curl -d \"number=1&time=600".$timeout."\" ".$paths['media-api']."lib/youtube_upload.php";	
 //		$this->startCheckProcess($apCommand,$cqIndex); 
 
 		return $retData;
