@@ -29,9 +29,9 @@ require_once './Zend/Loader.php'; # this loads all of the API classes
 	$result0 = $mysqli->query("	SELECT * 
 											FROM queue_commands AS cq, command_routes AS cr 
 											WHERE cr.cr_action=cq.cq_command 
-											AND cq.cq_command IN('media-youtube-upload','media-youtube-metadata')
+											AND cq.cq_command IN('media-youtube-upload','media-youtube-update')
 											AND cq.cq_status IN ('N','P')  
-											ORDER BY cq.cq_time LIMIT 1");
+											ORDER BY cq.cq_index DESC LIMIT 1");
 
 	if ($row0 = $result0->fetch_object()) {
 
@@ -54,7 +54,7 @@ require_once './Zend/Loader.php'; # this loads all of the API classes
 		$youChanPass=$youTubeChanPass[$youtube_channel];
 		
 		# echo "Authentication: $APIkey | $youChanUser | $youChanPass<br /><br />\n"; # DEBUG
-		
+		error_log('username is '.$youChanUser.' and password is '.$youChanPass);
 		$authenticationURL= 'https://www.google.com/accounts/ClientLogin';
 		$httpClient = Zend_Gdata_ClientLogin::getHttpClient(
 			$username = $youChanUser,
@@ -75,12 +75,12 @@ require_once './Zend/Loader.php'; # this loads all of the API classes
 		
 //		appendToLog("Attempting to upload <b>".$fullpath."</b> [ ".$ContentType." ] ...<br />", $echo);
 
-				
+
 		if (	$row0->cq_command == 'media-youtube-upload') {
 
 			$m_data= $youTubeObj->uploadToYoutube($cq_data, $row0->cq_index);
 				
-		} elseif (	$row0->cq_command == 'media-youtube-metadata') {
+		} elseif (	$row0->cq_command == 'media-youtube-update') {
 
 			$m_data= $youTubeObj->updateYoutubeData($cq_data, $row0->cq_index);	
 		}

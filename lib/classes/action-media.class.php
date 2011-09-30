@@ -62,10 +62,13 @@ class Default_Model_Action_Class
 		$j=0;
 		if ($result0->num_rows >=1) {
 			while(	$row0 = $result0->fetch_object()) {
+				
+				$timout = null;
+				
 				if ($row0->ap_cq_index == $cq_index) $j=1;
 // Is this process (ap_process_id) still running and within the timeout ($timout) if so update it's ap_last_checked timestamp   				
 				if ($this->PsExists($row0->ap_process_id)) {
-					if ( $timout < (time() - $row->ap_timestamp)) {
+					if ( $timout < (time() - $row0->ap_timestamp)) {
 						$this->m_mysqli->query("
 							UPDATE `api_process` 
 							SET `ap_status`='Y', `ap_last_checked`='".date("Y-m-d H:i:s", time())."' 
@@ -469,6 +472,7 @@ class Default_Model_Action_Class
 
 	public function doMediaYoutubeUpdate($mArr,$mNum,$cqIndex)
 	{
+		error_log('in the routine, about to call youtube_upload as a background task');
 		global  $timeout,$paths;
 		
 		$retData=$mArr;
@@ -478,7 +482,7 @@ class Default_Model_Action_Class
 
 // Check and/or start 2s polling process
 		$apCommand="curl -d \"number=1&time=600".$timeout."\" ".$paths['media-api']."lib/youtube_upload.php";	
-//		$this->startCheckProcess($apCommand,$cqIndex); 
+		$this->startCheckProcess($apCommand,$cqIndex); 
 
 		return $retData;
 	}

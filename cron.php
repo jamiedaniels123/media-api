@@ -35,6 +35,7 @@ getid3_lib::IncludeDependency(GETID3_INCLUDEPATH.'write.php', __FILE__, true);
 			while(	$row0 = $result0->fetch_object()) { 
 //		$arrTemp=json_decode($row0->cq_data);
 // error_log("row0.cq_cq_index =".$row0->cq_index." row0.data ".$row0->cq_data);  // debug
+				error_log($row0->cr_function);
 				$m_data= $dataObj->doQueueAction($row0->cr_function, unserialize($row0->cq_data), $row0->cq_index, $row0->cq_cq_index);	
 			// Log the command and response
 			}
